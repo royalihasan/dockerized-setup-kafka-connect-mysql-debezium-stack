@@ -1,0 +1,122 @@
+version: '3'
+services:
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:latest
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    command:
+      - redpanda
+      - start
+      - --overprovisioned
+      - --smp
+      - "1"
+      - --memory
+      - "1G"
+      - --reserve-memory
+      - "0M"
+      - --node-id
+      - "0"
+      - --kafka-addr
+      - PLAINTEXT://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092
+      - --advertise-kafka-addr
+      - PLAINTEXT://redpanda:29092,OUTSIDE://redpanda:9092
+      - --check=false
+
+    networks:
+      - kafka-network
+  console:
+    image: docker.redpanda.com/redpandadata/console:latest
+    entrypoint: /bin/sh
+    command: -c "echo \"$$CONSOLE_CONFIG_FILE\" > /tmp/redpanda-config.yml; /app/console"
+    environment:
+      CONFIG_FILEPATH: /tmp/redpanda-config.yml
+      CONSOLE_CONFIG_FILE: |
+        kafka:
+          brokers: [ "redpanda:9092" ]
+          schemaRegistry:
+             enabled: true
+             urls: ["http://redpanda:8081"]
+             username: console
+             password: redacted 
+          protobuf:
+            enabled: true
+            schemaRegistry:
+              enabled: true
+              refreshInterval: 5m
+        redpanda:
+          adminApi:
+            enabled: true
+            urls: ["http://redpanda:9644"]
+        
+        connect:
+          enabled: true
+          clusters:
+            - name: local-connect-cluster
+              url: http://connect:8083/
+    ports:
+      - 8080:8080
+    networks:
+      - kafka-network
+    depends_on:
+      - redpanda
+
+  connect:
+    image: debezium/connect:latest
+    container_name: connect
+    environment:
+      BOOTSTRAP_SERVERS: "redpanda:9092"
+      GROUP_ID: "1"
+      CONFIG_STORAGE_TOPIC: "inventory.configs"
+      OFFSET_STORAGE_TOPIC: "inventory.offset"
+      STATUS_STORAGE_TOPIC: "inventory.status"
+      CONNECT_INTERNAL_KEY_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+      CONNECT_INTERNAL_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+      CONNECT_KEY_CONVERTER_SCHEMA_REGISTRY_URL: http://redpanda:8081
+      CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: http://redpanda:8081
+      CONNECT_LOG4J_ROOT_LOGLEVEL: "INFO"
+
+    depends_on: [ redpanda ]
+    ports:
+      - "8083:8083"
+    networks:
+      - kafka-network
+
+  ui:
+    container_name: ui
+    image: debezium/debezium-ui
+    ports:
+      - "9090:8080"
+    environment:
+      KAFKA_CONNECT_URIS: http://connect:8083/
+    depends_on:
+      - connect
+    networks:
+      - kafka-network
+
+  mysql:
+    image: mysql:latest
+    container_name: mysql
+    ports:
+      - 3306:3306
+    environment:
+      - MYSQL_ROOT_PASSWORD=Admin123
+      - MYSQL_USER=debezium_user
+      - MYSQL_PASSWORD=debezium
+    networks:
+      - kafka-network
+
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+    networks:
+      - kafka-network
+
+networks:
+  kafka-network:
+    driver: bridge

@@ -1,0 +1,6 @@
+POST http://localhost:8083/connectors
+Content-Type: application/json
+
+> create_mysql_source_connector.json
+
+###
