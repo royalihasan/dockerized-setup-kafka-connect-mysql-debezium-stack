@@ -150,28 +150,83 @@ values (5, 'Hansiain', 'Coda', 'hcoda4@senate.gov', 'Male', 'platinum', 'Central
 ---
 
 ## Create a Source Connector
+
 `Post http://localhost:8083/connectors/`
+
+If you want to include just Customer Table just set the property as  `database.include.list:demo.CUSTOMERS ` Or you
+table name with demo prefix
 
 ```json
 {
-  "name": "inventory-connector-generic-1",
+  "name": "inventory-connector-customers",
   "config": {
-    "connector.class": "io.debezium.connector.sqlserver.SqlServerConnector",
-    "database.hostname": "mssql",
-    "database.port": "1433",
-    "database.user": "sa",
-    "database.password": "Admin123",
-    "database.names": "demo",
-    "topic.prefix": "mssql",
-    "schema.history.internal.kafka.bootstrap.servers": "kafka:9092",
-    "schema.history.internal.kafka.topic": "schemahistory.mssql",
-    "database.encrypt": "false"
+    "connector.class": "io.debezium.connector.mysql.MySqlConnector",
+    "database.hostname": "mysql",
+    "database.port": "3306",
+    "database.user": "debezium",
+    "database.password": "dbz",
+    "database.server.id": "184054",
+    "topic.prefix": "mysql",
+    "database.include.list": "demo.CUSTOMERS",
+    "schema.history.internal.kafka.bootstrap.servers": "redpanda:9092",
+    "schema.history.internal.kafka.topic": "schema.history.mysql",
+    "include.schema.changes": "true"
+  }
+}
+```
+
+_OR_
+
+you can add all `Tables` which are presented in demo DB
+
+```json
+{
+  "name": "inventory-connector-customers",
+  "config": {
+    "connector.class": "io.debezium.connector.mysql.MySqlConnector",
+    "database.hostname": "mysql",
+    "database.port": "3306",
+    "database.user": "debezium",
+    "database.password": "dbz",
+    "database.server.id": "184054",
+    "topic.prefix": "mysql",
+    "database.include.list": "demo.CUSTOMERS",
+    "schema.history.internal.kafka.bootstrap.servers": "redpanda:9092",
+    "schema.history.internal.kafka.topic": "schema.history.mysql",
+    "include.schema.changes": "true"
   }
 }
 ```
 
 ## Create Postgres Sink Connector
+
 `Post http://localhost:8083/connectors/`
+
+If you want to replicate just single Table like `CUSTOMERS` table
+
+```json
+{
+  "name": "jdbc-connector-generic",
+  "config": {
+    "connector.class": "io.debezium.connector.jdbc.JdbcSinkConnector",
+    "tasks.max": "1",
+    "connection.url": "jdbc:postgresql://postgres:5432/",
+    "connection.username": "postgres",
+    "connection.password": "postgres",
+    "insert.mode": "upsert",
+    "delete.enabled": "true",
+    "primary.key.mode": "record_key",
+    "schema.evolution": "basic",
+    "database.time_zone": "UTC",
+    "topics": "mysql.demo.CUSTOMERS"
+  }
+}
+```
+
+_OR_
+
+Multiple Tables just pass it in `topic` property as list separated by ,
+
 ```json
 {
   "name": "jdbc-connector-generic",
