@@ -148,3 +148,45 @@ values (5, 'Hansiain', 'Coda', 'hcoda4@senate.gov', 'Male', 'platinum', 'Central
 > Now Your Database is Ready!
 
 ---
+
+## Create a Source Connector
+`Post http://localhost:8083/connectors/`
+
+```json
+{
+  "name": "inventory-connector-generic-1",
+  "config": {
+    "connector.class": "io.debezium.connector.sqlserver.SqlServerConnector",
+    "database.hostname": "mssql",
+    "database.port": "1433",
+    "database.user": "sa",
+    "database.password": "Admin123",
+    "database.names": "demo",
+    "topic.prefix": "mssql",
+    "schema.history.internal.kafka.bootstrap.servers": "kafka:9092",
+    "schema.history.internal.kafka.topic": "schemahistory.mssql",
+    "database.encrypt": "false"
+  }
+}
+```
+
+## Create Postgres Sink Connector
+`Post http://localhost:8083/connectors/`
+```json
+{
+  "name": "jdbc-connector-generic",
+  "config": {
+    "connector.class": "io.debezium.connector.jdbc.JdbcSinkConnector",
+    "tasks.max": "1",
+    "connection.url": "jdbc:postgresql://postgres:5432/",
+    "connection.username": "postgres",
+    "connection.password": "postgres",
+    "insert.mode": "upsert",
+    "delete.enabled": "true",
+    "primary.key.mode": "record_key",
+    "schema.evolution": "basic",
+    "database.time_zone": "UTC",
+    "topics": "mysql.demo.CATEGORIES, mysql.demo.COUPONS, mysql.demo.CUSTOMERS, mysql.demo.EMPLOYEES, mysql.demo.EVENTS, mysql.demo.ORDER_ITEMS, mysql.demo.ORDERS, mysql.demo.PAYMENTS, mysql.demo.PRODUCTS, mysql.demo.REVIEWS, mysql.demo.SUPPLIERS"
+  }
+}
+```
