@@ -153,7 +153,7 @@ values (5, 'Hansiain', 'Coda', 'hcoda4@senate.gov', 'Male', 'platinum', 'Central
 
 `Post http://localhost:8083/connectors/`
 
-If you want to include just Customer Table just set the property as  `database.include.list:demo.CUSTOMERS ` Or you
+If you want to include just Customer Table just set the property as  `database.include.list:demo.CUSTOMERS ` Or your
 table name with demo prefix
 
 ```json
@@ -206,7 +206,7 @@ If you want to replicate just single Table like `CUSTOMERS` table
 
 ```json
 {
-  "name": "jdbc-connector-generic",
+  "name": "jdbc-connector-customers",
   "config": {
     "connector.class": "io.debezium.connector.jdbc.JdbcSinkConnector",
     "tasks.max": "1",
